@@ -49,6 +49,8 @@ spec:
       labels:
         app: marketflow-db
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: worker-03
       containers:
         - name: timescaledb
           image: 192.168.55.148:5000/mirror/docker.io/timescale/timescaledb:latest-pg16
@@ -107,13 +109,7 @@ spec:
         - name: init-sql
           configMap:
             name: marketflow-db-init
-  volumeClaimTemplates:
-    - metadata:
-        name: data
-      spec:
-        accessModes:
-          - ReadWriteOnce
-        storageClassName: nfs-client
-        resources:
-          requests:
-            storage: 20Gi
+        - name: data
+          hostPath:
+            path: /var/lib/marketflow/timescaledb
+            type: DirectoryOrCreate

@@ -62,6 +62,16 @@ SELECT * FROM timescaledb_information.compression_settings;
 
 The MVP stores backup files under `/backup` in a PVC. NAS/NFS backup export can be added later.
 
+## Storage
+
+The cluster currently only has the `nfs-client` StorageClass. PostgreSQL initialization performs ownership changes on `PGDATA`, and the NFS provisioner rejects that operation. For the MVP, the database StatefulSet is pinned to `worker-03` and stores data on:
+
+```text
+/var/lib/marketflow/timescaledb
+```
+
+Move this to a proper local PV, Longhorn, Rook/Ceph, CloudNativePG storage, or another PostgreSQL-compatible block storage before HA production use.
+
 ## Notes
 
 - TimescaleDB image tag is pinned to the PostgreSQL major tag: `latest-pg16`.
