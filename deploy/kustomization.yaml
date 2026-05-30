@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - k8s/namespace.yaml
+  - k8s/postgres-timescaledb.yaml
+  - k8s/postgres-backup-cronjob.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+configMapGenerator:
+  - name: marketflow-db-init
+    namespace: marketflow
+    files:
+      - 001_extensions.sql=db/init/001_extensions.sql
+      - 002_schema.sql=db/init/002_schema.sql
+      - 003_timescale_policy.sql=db/init/003_timescale_policy.sql
+      - 004_continuous_aggregate.sql=db/init/004_continuous_aggregate.sql

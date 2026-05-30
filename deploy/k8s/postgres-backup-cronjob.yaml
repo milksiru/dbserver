@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: marketflow-db-backup
+  namespace: marketflow
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: nfs-client
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: marketflow-db-backup
+  namespace: marketflow
+spec:
+  schedule: "0 3 * * *"
+  timeZone: Asia/Seoul
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: pg-dump
+              image: 192.168.55.148:5000/mirror/docker.io/timescale/timescaledb:latest-pg16
+              imagePullPolicy: IfNotPresent
+              command:
+                - sh
+                - -c
+                - |
+                  set -euo pipefail
+                  ts="$(date +%Y%m%d-%H%M%S)"
+                  pg_dump -h "$PGHOST" -U "$PGUSER" -d "$PGDATABASE" -Fc -f "/backup/marketflow-${ts}.dump"
+                  find /backup -type f -name 'marketflow-*.dump' -mtime +14 -delete
+              env:
+                - name: PGHOST
+                  value: marketflow-db.marketflow.svc.cluster.local
+                - name: PGDATABASE
+                  valueFrom:
+                    secretKeyRef:
+                      name: marketflow-db-secret
+                      key: POSTGRES_DB
+                - name: PGUSER
+                  valueFrom:
+                    secretKeyRef:
+                      name: marketflow-db-secret
+                      key: POSTGRES_USER
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: marketflow-db-secret
+                      key: POSTGRES_PASSWORD
+              volumeMounts:
+                - name: backup
+                  mountPath: /backup
+          volumes:
+            - name: backup
+              persistentVolumeClaim:
+                claimName: marketflow-db-backup
