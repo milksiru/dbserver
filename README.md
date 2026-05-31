@@ -26,7 +26,7 @@ Password is managed only through Kubernetes Secret.
 
 ## Deploy
 
-All Kubernetes operations must run through workstation `192.168.55.148`.
+All Kubernetes operations must run through the configured workstation.
 
 This repo is intended to be synced by Argo CD. It does not need a build runner unless custom DB images are introduced later.
 
@@ -64,17 +64,12 @@ The MVP stores backup files under `/backup` in a PVC. NAS/NFS backup export can 
 
 ## Storage
 
-The cluster currently only has the `nfs-client` StorageClass. PostgreSQL initialization performs ownership changes on `PGDATA`, and the NFS provisioner rejects that operation. For the MVP, the database StatefulSet is pinned to `worker-03` and stores data on:
-
-```text
-/var/lib/marketflow/timescaledb
-```
+PostgreSQL initialization performs ownership changes on `PGDATA`, so use a PostgreSQL-compatible storage backend. For the MVP, the database StatefulSet stores data on a node-local path configured in the manifest.
 
 Move this to a proper local PV, Longhorn, Rook/Ceph, CloudNativePG storage, or another PostgreSQL-compatible block storage before HA production use.
 
 ## Notes
 
 - TimescaleDB image tag is pinned to the PostgreSQL major tag: `latest-pg16`.
-- The Kubernetes manifest references the internal registry mirror:
-  `192.168.55.148:5000/mirror/docker.io/timescale/timescaledb:latest-pg16`.
+- The Kubernetes manifest references the internal registry mirror for the TimescaleDB image.
 - Do not hardcode real passwords in code or manifests.
